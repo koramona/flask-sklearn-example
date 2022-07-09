@@ -1,34 +1,29 @@
-from flask import Flask, request
+from fastapi import FastAPI
 from joblib import load
+from pydantic import BaseModel
+from typing import Union
 
 decision_tree = load("iris_classifier.joblib")
 
 IRIS_CLASS_NAMES = {0: "Iris-Setosa", 1: "Iris-Versicolour", 2: "Iris-Virginica"}
 
-app = Flask(__name__)
+app = FastAPI(__name__)
 
-PORT = 4100
+class Item(BaseModel):
+    values: List[float]
 
 
-@app.route("/")
+@app.get("/")
 def hello():
     return "Hello, World!"
 
 
-@app.route("/score", methods=["POST"])
-def score_inputs():
-    content = request.json
-    val_to_score = content["values"]
+@app.post("/score", methods=["POST"])
+def score_inputs(content: Item):
+    val_to_score = content.values
 
     result = decision_tree.predict([val_to_score])
 
     iris_name_result = IRIS_CLASS_NAMES[result[0]]
 
     return {"result": iris_name_result}
-
-
-if __name__ == "__main__":
-    app.run(
-        host="0.0.0.0",
-        threaded=True,
-        port=PORT)
